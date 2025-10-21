@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
+using System.Collections;
 using System.Globalization;
 
 
@@ -33,7 +34,7 @@ namespace WeatherJournalApp
             {
                 DbContext = serviceProvider.GetRequiredService<Weather>();
 
-                await DbContext.Database.EnsureDeletedAsync();
+               
                 await DbContext.Database.EnsureCreatedAsync();
 
                 int choice;
@@ -56,7 +57,7 @@ namespace WeatherJournalApp
                             break;
 
                         default:
-                            Console.WriteLine("Ошибка! Можно ввести только значения {1, 2, 3, 4}.");
+                            Console.WriteLine("\nОшибка! Можно ввести только значения {1, 2, 3, 4}.\n");
                             break;
                     }
                 } while (choice != 4);
@@ -156,19 +157,32 @@ namespace WeatherJournalApp
         {
 
             Console.Write("Введите месяц (от 1 до 12): ");
-            if (!int.TryParse(Console.ReadLine(), out int month) || month < 1 || month > 12) return;
+            if (!int.TryParse(Console.ReadLine(), out int month) || month < 1 || month > 12)
+            {
+                Console.WriteLine("\nНекорректный ввод.\n");
+                return;
+            }
+
+            Console.Write("Введите год: ");
+            if (!int.TryParse(Console.ReadLine(), out int year) || year <= 0)
+            {
+                Console.WriteLine("\nНекорректный ввод.\n");
+                return;
+            }
 
 
-            var results = await DbContext.Records
-                .Where(r => r.DateOfRecord.Month == month)
+            var resList = await DbContext.Records
+                .Where(r => r.DateOfRecord.Month == month && r.DateOfRecord.Year == year)
                 .OrderBy(r => r.DateOfRecord)
                 .ToListAsync();
 
+            ArrayList results = new ArrayList(resList);
 
-            Console.WriteLine($"\nДанные за {month:00} ({results.Count} записей)\n");
-            if (results.Any())
+
+            Console.WriteLine($"\nДанные за {month:00} месяц (и {year} год ({results.Count} записей)\n");
+            if (results.Count > 0)
             {
-                foreach (var record in results)
+                foreach (WeatherRec record in results)
                 {
                     Console.WriteLine(record.ToString());
                 }
